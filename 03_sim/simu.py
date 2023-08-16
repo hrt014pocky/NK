@@ -18,10 +18,16 @@ def main():
     # iverilog_cmd += ['-D', r'OUTPUT="signature.output"']
     # testbench文件
     # iverilog_cmd.append(r'xxx.v')
-    iverilog_cmd.append(sim_dir + r'Stopwatch_tb.v')
+    # iverilog_cmd.append(sim_dir + r'Stopwatch_tb.v')
+    iverilog_cmd.append(sim_dir + r'fft/afft8_tb.v')
+    # iverilog_cmd.append(sim_dir + r'fft/btf_tb.v')
     # ../rtl
     # iverilog_cmd.append(rtl_dir + r'xxx.v')
-    iverilog_cmd.append(rtl_dir + r'Stopwatch.v')
+    # iverilog_cmd.append(rtl_dir + r'Stopwatch.v')
+    iverilog_cmd.append(rtl_dir + r'fft/afft8.v')
+    iverilog_cmd.append(rtl_dir + r'fft/btf.v')
+    iverilog_cmd.append(rtl_dir + r'fft/aram.v')
+    iverilog_cmd.append(rtl_dir + r'fft/aramwn.v')
 
 
     # print(iverilog_cmd)
