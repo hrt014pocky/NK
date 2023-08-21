@@ -106,6 +106,7 @@ always @(posedge clk or negedge rst_n) begin
         step_cnt1   <= 8'd0;
         cnt         <= 15'd0;
         wncnt       <= 15'd0;
+        fft_ok      <= 1'd0;
     end
     else begin
         layer_cnt1  <= layer_cnt; 
@@ -166,6 +167,32 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 // 蝶形运算
+
+reg [15:0] x1Index;
+reg [15:0] x2Index;
+
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+        x1Index <= 16'd0;
+        x2Index <= 16'd0;
+    end
+    else begin
+        if(btf_start) begin
+            
+        end
+    end
+end
+
+always @(*) begin
+    if(!rst_n) begin
+        btf_din1 <= 64'd0;
+        btf_din2 <= 64'd0;
+    end
+    else begin
+        btf_din1 <= 64'd0;
+        btf_din2 <= 64'd0;
+    end
+end
 
 btf u_btf(
     .clk   (clk   ),

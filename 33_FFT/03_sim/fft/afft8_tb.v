@@ -49,7 +49,7 @@ initial begin
     start = 0;
     #100
     start = 1;
-    #30
+    #20
     start = 0;
 end
 
