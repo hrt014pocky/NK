@@ -1,0 +1,16 @@
+#altera
+**/db
+**/incremental_db
+**/output_files
+
+# xilinx
+*/.Xil
+**/*.cache
+**/*.hw
+**/*.ip_user_files
+**/*.runs
+**/*.sim
+**/*.srcs
+**/vivado.jou
+**/vivado.log
+

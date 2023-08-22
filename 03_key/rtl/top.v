@@ -5,7 +5,7 @@ module top (
     output [3:0] led
 );
 
-reg [31:0] cnt0, cnt1;
+reg [31:0] cnt0;
 
 reg [3:0] key1, key2;
 
@@ -53,8 +53,6 @@ always @(posedge clk or negedge rst_n) begin
         key0_long  <= 1'd0;
     end
 end
-
-wire key0_valid = cnt0 == 32'd20_000_000;
 
 reg led0;
 always @(posedge clk or negedge rst_n) begin
