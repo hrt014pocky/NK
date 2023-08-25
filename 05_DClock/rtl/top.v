@@ -32,9 +32,9 @@ reg [3:0] key1, key2;
 reg key0_short, key0_long;
 reg key1_short, key1_long;
 
-reg [31:0] cnt100ms;
-wire cnt100ms_add;
-wire cnt100ms_end;
+reg [31:0] cntclock;
+wire cntclock_add;
+wire cntclock_end;
 
 reg [7:0] cnt1s;
 wire cnt1s_add;
@@ -372,18 +372,18 @@ end
 //-------------------------------------------------------------------
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
-        cnt100ms <= 0;
+        cntclock <= 0;
     end
-    else if(cnt100ms_add) begin
-        if(cnt100ms_end)
-            cnt100ms <= 0;
+    else if(cntclock_add) begin
+        if(cntclock_end)
+            cntclock <= 0;
         else
-            cnt100ms <= cnt100ms + 1'd1;
+            cntclock <= cntclock + 1'd1;
    end
 end
 
-assign cnt100ms_add = !timeset;
-assign cnt100ms_end = cnt100ms_add && cnt100ms == 32'd10_0000 - 1;
+assign cntclock_add = !timeset;
+assign cntclock_end = cntclock_add && cntclock == 32'd100_000_000 - 1;
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
@@ -397,7 +397,7 @@ always @(posedge clk or negedge rst_n) begin
    end
 end
 
-assign cnt1s_add = cnt100ms_end;
+assign cnt1s_add = cntclock_end;
 assign cnt1s_end = cnt1s_add && cnt1s == 8'd10 - 1;
 
 always @(posedge clk or negedge rst_n) begin

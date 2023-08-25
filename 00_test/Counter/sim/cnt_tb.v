@@ -24,5 +24,20 @@ initial begin
 end
 
 
+reg [15:0] a,b,c;
+
+always @(*) begin
+    if(!rst_n) begin
+        a = 16'd111;
+        b = 16'd222;
+        c = 16'd333;
+        
+    end
+    else begin
+        a = a + 1;
+    end
+end
+
+
 endmodule
 

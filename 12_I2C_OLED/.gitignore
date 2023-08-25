@@ -11,6 +11,8 @@
 **/*.runs
 **/*.sim
 **/*.srcs
+**/*.gen
 **/vivado.jou
 **/vivado.log
+
 **/sim
