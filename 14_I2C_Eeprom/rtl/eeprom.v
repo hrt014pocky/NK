@@ -75,7 +75,7 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 assign cnt_add = cnt != 0;
-assign cnt_end = cnt_add && cnt == 32'd4_000_000;
+assign cnt_end = cnt_add && cnt == 32'd4_000;
 
 assign exec = cnt_end;
 

@@ -1,8 +1,8 @@
 module i2c_drv 
     #(
-      parameter   SLAVE_ADDR = 7'b1010011   ,  
+      parameter   SLAVE_ADDR = 7'b0111100   ,  
       parameter   CLK_FREQ   = 32'd50_000_000, 
-      parameter   I2C_FREQ   = 18'd250_000     
+      parameter   I2C_FREQ   = 32'd400_000     
     )
 (    
     input clk,
@@ -304,19 +304,25 @@ always @(posedge i2c_clk or negedge rst_n) begin
                     sda_reg <= 0;
             end
             ACK1         : begin
-                sda_reg <=  1'b1;
+                if(addr_hl) 
+                    sda_reg <= word_addr[15];
+                else 
+                    sda_reg <= word_addr[7];
             end
             WORD_ADDRH   : begin
                 sda_reg <= word_addr[15 - cntbit];
             end
             ACK2         : begin
-                sda_reg <=  1'b1;
+                sda_reg <= word_addr[7];
             end
             WORD_ADDRL   : begin
                 sda_reg <= word_addr[7 - cntbit];
             end
             ACK3         : begin
-                sda_reg <=  1'b1;
+                if(we)
+                    sda_reg <= wdata[7];
+                else
+                    sda_reg <= 1'd1;
             end
             WR_DATA      : begin
                 sda_reg <= wdata[7 - cntbit];
