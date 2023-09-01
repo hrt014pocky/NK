@@ -19,14 +19,14 @@ module spi_dri
 
 );
 
-localparam IDLE  = 8'd0;
-localparam READ  = 8'd1;
-localparam WRITE = 8'd2;
+localparam IDLE   = 8'd0;
+localparam EXEC   = 8'd1;
+localparam HOLD   = 8'd2;
+localparam DELAY  = 8'd3;
 
 reg [7:0] state, state_next;
 
 reg state_done;
-wire bit_cnt_flag;
 reg [7:0] rdata_reg;
 
 reg do_reg;
@@ -63,10 +63,28 @@ always @(posedge clk or negedge rst_n) begin
     else if(delay_add) begin
         delay <= delay + 1'd1;
     end
+    else if(state == DELAY)
+        delay <= 0;
 end
 
 assign delay_add = delay < 20;
 assign delay_end = delay == 20;
+
+reg [15:0] stop_delay;
+wire stop_delay_add, stop_delay_end;
+
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+        stop_delay <= 0;
+    end
+    else if(stop_delay_end)
+        stop_delay <= 0;
+    else if(state == DELAY) begin
+        stop_delay <= stop_delay + 1'd1;
+    end
+end
+
+assign stop_delay_end = stop_delay == 20;
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
@@ -83,7 +101,7 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 assign cnt_clk_clr = state == IDLE;
-assign cnt_clk_add = delay_end;
+assign cnt_clk_add = delay_end && (state == EXEC || state == HOLD);
 assign cnt_clk_end = cnt_clk_add && cnt_clk == 5 - 1;
 
 
@@ -127,9 +145,7 @@ assign cnt_bit_add = sck_bitedge && sck_reg;
 always @(*) begin
     if(!rst_n)
         cnt_bit_end = 1'd0;
-    else if(state == WRITE)
-        cnt_bit_end = cnt_bit_add && cnt_bit == 8-1;
-    else if(state == READ)
+    else if(state == EXEC)
         cnt_bit_end = cnt_bit_add && cnt_bit == 8-1;
     else
         cnt_bit_end = 1'd0;
@@ -147,9 +163,9 @@ end
 always @(*) begin
     if(!rst_n)
         cs_reg <= 1'd1;
-    else if(start)
+    else if(state == HOLD || state == EXEC || state == DELAY)
         cs_reg <= 1'd0;
-    else if(array_done)
+    else if(state == IDLE)
         cs_reg <= 1'd1;
     else 
         cs_reg <= cs_reg;
@@ -158,7 +174,7 @@ end
 always @(*) begin
     if(!rst_n)
         done_reg <= 1'd0;
-    else if(state == READ || state == WRITE) begin
+    else if(state == EXEC) begin
         if(state_done == 1)
             done_reg <= 1'd1;
         else 
@@ -185,83 +201,75 @@ always @(*) begin
         case (state)
             IDLE  : begin
                 if(start)
-                    if(we)
-                        state_next = WRITE;
-                    else 
-                        state_next = READ;
+                    state_next = EXEC;
                 else
                     state_next = IDLE;
             end
-            READ  : begin
+            EXEC  : begin
                 if(state_done)
-                    state_next = IDLE;
+                    state_next = HOLD;
                 else 
-                    state_next = READ;
+                    state_next = EXEC;
             end
-            WRITE : begin
-                if(state_done)
+            HOLD : begin
+                if(start)
+                    state_next = EXEC;
+                else if(sck_nedge)
+                    state_next = DELAY;
+                else
+                    state_next = HOLD;
+            end
+            DELAY : begin
+                if (stop_delay_end) 
                     state_next = IDLE;
                 else 
-                    state_next = WRITE;
+                    state_next = DELAY;
             end
             default: ;
         endcase
     end
 end
 
-
+// 输出数据
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         do_reg <= 1'd0;
-        rdata_reg <= 8'd0;
-        bitstop <= 1'd0;
     end
     else begin
-        case (state)
-            IDLE  : begin
-                do_reg <= 1'd0;
-                rdata_reg <= 8'd0;
-                bitstop <= 1'd0;
+        if(state == EXEC) begin
+            if(sck_nedge) begin
+                do_reg <= wdata[7 - cnt_bit];
             end
-            READ  : begin
-                if(sck_nedge)
-                    rdata_reg[7 - cnt_bit] <= miso;
-            end
-            WRITE : begin
-                if(cnt_bit_end)
-                    bitstop <= 1'd1;
-                if(sck_nedge && !bitstop) begin
-                    do_reg <= wdata[7 - cnt_bit];
-                end
-            end
-            default: ;
-        endcase
+        end
     end
 end
 
-reg s2idle_flag;
+// 读数据寄存
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+        rdata_reg <= 8'd0;
+    end
+    else if(state == EXEC) begin
+        if(sck_nedge)
+            rdata_reg[7 - cnt_bit] <= miso;
+    end
+end
+
+reg byte_flag;
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         state_done <= 1'd0;
-        s2idle_flag <= 1'd0;
+        byte_flag <= 1'd0;
     end
     else begin
         if(state == IDLE)
             state_done <= 1'd0;
-        else if(state == WRITE) begin
+        else if(state == EXEC) begin
             if(cnt_bit_end)
-                s2idle_flag <= 1'd1;
-            else if(s2idle_flag && cnt_sck == 3) begin
-                s2idle_flag <= 1'd0;
-                state_done  <= 1'd1;
-            end
-        end
-        else if(state == READ) begin
-            if(cnt_bit_end)
-                s2idle_flag <= 1'd1;
-            else if(s2idle_flag && cnt_sck == 3) begin
-                s2idle_flag <= 1'd0;
+                byte_flag <= 1'd1;
+            else if(byte_flag && cnt_sck == 1) begin
+                byte_flag <= 1'd0;
                 state_done  <= 1'd1;
             end
         end
